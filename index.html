@@ -1,0 +1,190 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>유준이 자산관리</title>
+<style>
+:root{--bg:#f5f7fb;--card:#fff;--text:#172033;--muted:#718096;--line:#e7ebf2;--blue:#2563eb;--green:#16a34a;--red:#dc2626;--shadow:0 8px 30px rgba(31,41,55,.07)}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Noto Sans KR",sans-serif}
+button,input,select{font:inherit}button{cursor:pointer;border:0}.app{max-width:1180px;margin:auto;padding:22px 18px 90px}
+.top{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px}.brand h1{font-size:24px;margin:0}.brand p{margin:5px 0 0;color:var(--muted);font-size:13px}
+.actions{display:flex;gap:8px}.btn{background:#fff;border:1px solid var(--line);padding:10px 13px;border-radius:10px}.primary{background:var(--blue);color:white;border-color:var(--blue)}
+.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px;box-shadow:var(--shadow)}.metric small{color:var(--muted);font-size:13px}.metric strong{display:block;font-size:25px;margin-top:8px}.metric .sub{font-size:12px;color:var(--muted);margin-top:5px}
+.section{margin-top:18px}.section-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}.section-head h2{font-size:17px;margin:0}.two{display:grid;grid-template-columns:1.3fr .7fr;gap:14px}
+.bar{height:10px;background:#edf0f5;border-radius:10px;overflow:hidden}.bar i{display:block;height:100%;background:var(--blue);border-radius:10px}
+.flow{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}.flow div{padding:13px;background:#f8fafc;border-radius:12px}.flow b{display:block;font-size:16px;margin-top:4px}.flow span{font-size:12px;color:var(--muted)}
+canvas{width:100%;height:220px}.table-wrap{overflow:auto}table{width:100%;border-collapse:collapse;font-size:13px}th,td{text-align:left;padding:12px;border-bottom:1px solid var(--line);white-space:nowrap}th{color:var(--muted);font-weight:600}.income{color:var(--green)}.expense{color:var(--red)}.invest{color:var(--blue)}
+.modal{position:fixed;inset:0;background:rgba(15,23,42,.42);display:none;align-items:center;justify-content:center;padding:18px;z-index:5}.modal.show{display:flex}.modal-box{background:white;border-radius:18px;width:min(500px,100%);padding:20px}.modal-box h2{margin-top:0}.form{display:grid;gap:11px}.form label{font-size:12px;color:var(--muted)}.form input,.form select{width:100%;padding:11px;border:1px solid var(--line);border-radius:10px;background:#fff}.row{display:grid;grid-template-columns:1fr 1fr;gap:10px}.modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:15px}
+.empty{padding:35px;text-align:center;color:var(--muted)}.delete{color:var(--red);background:none}
+.nav{position:fixed;bottom:12px;left:50%;transform:translateX(-50%);background:#111827;color:white;border-radius:16px;padding:7px;display:flex;gap:4px;box-shadow:0 10px 30px #0002;z-index:4}.nav button{background:transparent;color:#cbd5e1;padding:9px 13px;border-radius:11px}.nav button.active{background:#fff;color:#111827}
+.page{display:none}.page.active{display:block}
+@media(max-width:800px){.grid{grid-template-columns:repeat(2,1fr)}.two{grid-template-columns:1fr}.flow{grid-template-columns:repeat(2,1fr)}.actions .hide-m{display:none}}
+@media(max-width:480px){.app{padding:17px 12px 85px}.grid{gap:8px}.card{padding:14px}.metric strong{font-size:20px}.brand h1{font-size:21px}.nav{width:calc(100% - 24px);justify-content:space-around}.nav button{font-size:12px;padding:9px 8px}}
+</style>
+
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#2563eb">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="apple-touch-icon" href="icon-192.png">
+
+</head>
+<body>
+<div class="app">
+<header class="top">
+<div class="brand"><h1>유준이의 자산관리</h1><p>수입 → 소비 → 저축·투자 → 자산 → 순자산</p></div>
+<div class="actions"><button class="btn hide-m" onclick="backup()">백업</button><button class="btn primary" onclick="openTx()">＋ 거래</button></div>
+</header>
+
+<section id="dashboard" class="page active">
+<div class="grid">
+<div class="card metric"><small>총자산</small><strong id="totalAsset">0원</strong><div class="sub">현재 등록 자산</div></div>
+<div class="card metric"><small>순자산</small><strong id="netAsset">0원</strong><div class="sub">자산 - 부채</div></div>
+<div class="card metric"><small>이번 달 수입</small><strong id="monthIncome">0원</strong><div class="sub">이번 달</div></div>
+<div class="card metric"><small>이번 달 소비</small><strong id="monthExpense">0원</strong><div class="sub">투자·저축 제외</div></div>
+</div>
+
+<div class="section two">
+<div class="card">
+<div class="section-head"><h2>이번 달 돈의 흐름</h2><span id="monthLabel" style="color:var(--muted);font-size:12px"></span></div>
+<div class="flow">
+<div><span>수입</span><b id="fIncome">0원</b></div>
+<div><span>소비</span><b id="fExpense">0원</b></div>
+<div><span>저축</span><b id="fSave">0원</b></div>
+<div><span>투자</span><b id="fInvest">0원</b></div>
+</div>
+<div style="margin-top:18px"><div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:6px"><span>자산 형성률</span><b id="savingRate">0%</b></div><div class="bar"><i id="savingBar" style="width:0%"></i></div></div>
+</div>
+<div class="card"><div class="section-head"><h2>자산 구성</h2></div><canvas id="assetChart"></canvas></div>
+</div>
+
+<div class="section card"><div class="section-head"><h2>월별 수입·소비</h2></div><canvas id="monthChart"></canvas></div>
+</section>
+
+<section id="transactions" class="page">
+<div class="card"><div class="section-head"><h2>거래내역</h2><button class="btn primary" onclick="openTx()">＋ 거래 추가</button></div>
+<div class="table-wrap"><table><thead><tr><th>날짜</th><th>구분</th><th>분류</th><th>내용</th><th>금액</th><th></th></tr></thead><tbody id="txBody"></tbody></table></div></div>
+</section>
+
+<section id="assets" class="page">
+<div class="card"><div class="section-head"><h2>자산 현황</h2><button class="btn primary" onclick="openAsset()">＋ 자산 추가</button></div>
+<div class="table-wrap"><table><thead><tr><th>종류</th><th>자산명</th><th>현재금액</th><th>기준일</th><th></th></tr></thead><tbody id="assetBody"></tbody></table></div>
+<div class="section" style="background:#f8fafc;border-radius:12px;padding:14px">총자산 <b id="assetTotal2">0원</b> · 총부채 <b id="debtTotal">0원</b> · 순자산 <b id="netAsset2">0원</b></div>
+</div>
+</section>
+
+<section id="goals" class="page">
+<div class="card"><div class="section-head"><h2>돈 관리 목표</h2><button class="btn primary" onclick="openGoal()">＋ 목표 추가</button></div><div id="goalList"></div></div>
+</section>
+
+<section id="settings" class="page">
+<div class="card"><h2>데이터 관리</h2><p style="color:var(--muted);font-size:13px">거래 기록은 이 기기의 브라우저에 저장되며 GitHub로 전송되지 않습니다. 브라우저 데이터를 지우면 기록도 삭제되므로 주기적으로 백업하세요. 다른 기기로 옮길 때도 백업·복원을 사용합니다. 자산 잔액은 거래와 별도로 직접 등록합니다.</p>
+<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" onclick="backup()">JSON 백업</button><label class="btn">JSON 복원<input id="restore" type="file" accept=".json" hidden onchange="restoreData(event)"></label><button class="btn" onclick="resetAll()">전체 초기화</button></div></div>
+</section>
+</div>
+
+<nav class="nav">
+<button class="active" data-page="dashboard">대시보드</button><button data-page="transactions">거래</button><button data-page="assets">자산</button><button data-page="goals">목표</button><button data-page="settings">설정</button>
+</nav>
+
+<div class="modal" id="txModal"><div class="modal-box"><h2>거래 추가</h2><div class="form">
+<div class="row"><div><label>날짜</label><input id="txDate" type="date"></div><div><label>구분</label><select id="txType"><option>수입</option><option>지출</option><option>저축</option><option>투자</option></select></div></div>
+<div class="row"><div><label>분류</label><select id="txCat"></select></div><div><label>금액</label><input id="txAmount" type="number" min="0" placeholder="0"></div></div>
+<div><label>내용</label><input id="txMemo" placeholder="예: 점심, 용돈, 삼성전자 매수"></div>
+<div class="modal-actions"><button class="btn" onclick="closeModals()">취소</button><button class="btn primary" onclick="saveTx()">저장</button></div></div></div></div>
+
+<div class="modal" id="assetModal"><div class="modal-box"><h2>자산 추가</h2><div class="form">
+<div class="row"><div><label>종류</label><select id="assetType"><option>현금</option><option>예금/적금</option><option>주식</option><option>ETF</option><option>기타투자</option><option>기타자산</option><option>부채</option></select></div><div><label>현재 금액</label><input id="assetAmount" type="number" min="0"></div></div>
+<div class="row"><div><label>자산명</label><input id="assetName" placeholder="예: 생활비 계좌"></div><div><label>기준일</label><input id="assetDate" type="date"></div></div>
+<div class="modal-actions"><button class="btn" onclick="closeModals()">취소</button><button class="btn primary" onclick="saveAsset()">저장</button></div></div></div></div>
+
+<div class="modal" id="goalModal"><div class="modal-box"><h2>목표 추가</h2><div class="form">
+<div><label>목표명</label><input id="goalName" placeholder="예: 비상금"></div>
+<div class="row"><div><label>목표 금액</label><input id="goalTarget" type="number" min="0"></div><div><label>현재 금액</label><input id="goalCurrent" type="number" min="0"></div></div>
+<div><label>기한</label><input id="goalDate" type="date"></div>
+<div class="modal-actions"><button class="btn" onclick="closeModals()">취소</button><button class="btn primary" onclick="saveGoal()">저장</button></div></div></div></div>
+
+<script>
+const KEY="yujun-money-v1";
+let data={tx:[],assets:[],goals:[]};
+try{const stored=localStorage.getItem(KEY);if(stored){const parsed=JSON.parse(stored);if(!validData(parsed))throw Error();data=parsed;}}catch{alert("저장된 데이터를 읽지 못했습니다. 백업 복원을 먼저 확인해 주세요.");}
+const cats=["식비","카페/간식","교통","교육","여가","쇼핑","고정비","건강","기타","급여/용돈","기타수입","저축","투자"];
+const won=n=>new Intl.NumberFormat("ko-KR").format(Math.round(n||0))+"원";
+const localDate=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+const today=()=>localDate(new Date());
+function save(){try{localStorage.setItem(KEY,JSON.stringify(data));}catch{alert("기기에 저장하지 못했습니다. 지금 JSON 백업을 내려받아 주세요.");}render()}
+function monthKey(d){return d?.slice(0,7)}
+function currentMonth(){return today().slice(0,7)}
+function sums(){
+ let m=currentMonth(), t=data.tx.filter(x=>monthKey(x.date)===m);
+ return {income:t.filter(x=>x.type==="수입").reduce((a,x)=>a+x.amount,0),
+ expense:t.filter(x=>x.type==="지출").reduce((a,x)=>a+x.amount,0),
+ save:t.filter(x=>x.type==="저축").reduce((a,x)=>a+x.amount,0),
+ invest:t.filter(x=>x.type==="투자").reduce((a,x)=>a+x.amount,0)}
+}
+function render(){
+ const s=sums(), assets=data.assets.filter(x=>x.type!=="부채"), debts=data.assets.filter(x=>x.type==="부채");
+ const ta=assets.reduce((a,x)=>a+x.amount,0), td=debts.reduce((a,x)=>a+x.amount,0);
+ document.getElementById("totalAsset").textContent=won(ta);document.getElementById("netAsset").textContent=won(ta-td);
+ document.getElementById("assetTotal2").textContent=won(ta);document.getElementById("debtTotal").textContent=won(td);document.getElementById("netAsset2").textContent=won(ta-td);
+ document.getElementById("monthIncome").textContent=won(s.income);document.getElementById("monthExpense").textContent=won(s.expense);
+ document.getElementById("fIncome").textContent=won(s.income);document.getElementById("fExpense").textContent=won(s.expense);document.getElementById("fSave").textContent=won(s.save);document.getElementById("fInvest").textContent=won(s.invest);
+ let rate=s.income?(s.save+s.invest)/s.income*100:0;document.getElementById("savingRate").textContent=rate.toFixed(1)+"%";document.getElementById("savingBar").style.width=Math.min(rate,100)+"%";document.getElementById("monthLabel").textContent=currentMonth();
+ renderTx();renderAssets();renderGoals();drawCharts();
+}
+function renderTx(){
+ let body=document.getElementById("txBody");let arr=[...data.tx].sort((a,b)=>b.date.localeCompare(a.date));
+ body.innerHTML=arr.length?arr.map(x=>`<tr><td>${x.date}</td><td>${x.type}</td><td>${esc(x.cat)}</td><td>${esc(x.memo)}</td><td class="${x.type==="수입"?"income":x.type==="지출"?"expense":"invest"}">${won(x.amount)}</td><td><button class="delete" onclick="delTx('${x.id}')">삭제</button></td></tr>`).join(""):`<tr><td colspan="6" class="empty">아직 거래가 없습니다.</td></tr>`;
+}
+function renderAssets(){
+ let body=document.getElementById("assetBody");
+ body.innerHTML=data.assets.length?data.assets.map(x=>`<tr><td>${x.type}</td><td>${esc(x.name)}</td><td>${won(x.amount)}</td><td>${x.date}</td><td><button class="delete" onclick="delAsset('${x.id}')">삭제</button></td></tr>`).join(""):`<tr><td colspan="5" class="empty">자산을 등록해 주세요.</td></tr>`;
+}
+function renderGoals(){
+ let el=document.getElementById("goalList");
+ el.innerHTML=data.goals.length?data.goals.map(x=>{let p=x.target?Math.min(x.current/x.target*100,100):0;return `<div style="padding:16px 0;border-bottom:1px solid var(--line)"><div style="display:flex;justify-content:space-between"><b>${esc(x.name)}</b><span>${p.toFixed(1)}%</span></div><div class="bar" style="margin:9px 0"><i style="width:${p}%"></i></div><small style="color:var(--muted)">${won(x.current)} / ${won(x.target)} ${x.date?"· "+x.date:""}</small><button class="delete" style="float:right" onclick="delGoal('${x.id}')">삭제</button></div>`}).join(""):`<div class="empty">목표를 만들어 보세요.</div>`;
+}
+function drawCharts(){
+ const ac=document.getElementById("assetChart"),ctx=ac.getContext("2d"),w=ac.width=ac.clientWidth*2,h=ac.height=220*2;ctx.scale(2,2);
+ const vals={};data.assets.filter(x=>x.type!=="부채").forEach(x=>vals[x.type]=(vals[x.type]||0)+x.amount);pie(ctx,vals,ac.clientWidth,220);
+ const c=document.getElementById("monthChart"),cx=c.getContext("2d");c.width=c.clientWidth*2;c.height=220*2;cx.scale(2,2);lineChart(cx,c.clientWidth,220);
+}
+function pie(ctx,vals,w,h){let total=Object.values(vals).reduce((a,b)=>a+b,0);ctx.clearRect(0,0,w,h);if(!total){ctx.fillStyle="#94a3b8";ctx.textAlign="center";ctx.fillText("자산을 등록하면 차트가 나타납니다",w/2,h/2);return}let x=75,y=h/2,r=62,start=-Math.PI/2,colors=["#2563eb","#16a34a","#f59e0b","#8b5cf6","#ec4899","#64748b"];let i=0;for(let [k,v] of Object.entries(vals)){let a=v/total*Math.PI*2;ctx.beginPath();ctx.moveTo(x,y);ctx.arc(x,y,r,start,start+a);ctx.fillStyle=colors[i++%colors.length];ctx.fill();start+=a}ctx.font="12px sans-serif";ctx.textAlign="left";i=0;let yy=35;for(let [k,v] of Object.entries(vals)){ctx.fillStyle=colors[i%colors.length];ctx.fillRect(155,yy-9,10,10);ctx.fillStyle="#334155";ctx.fillText(k+" "+((v/total)*100).toFixed(0)+"%",173,yy);yy+=21;i++}}
+function lineChart(ctx,w,h){let months=[];for(let i=5;i>=0;i--){let now=new Date();let d=new Date(now.getFullYear(),now.getMonth()-i,1);months.push(localDate(d).slice(0,7))}let inc=months.map(m=>data.tx.filter(x=>monthKey(x.date)===m&&x.type==="수입").reduce((a,x)=>a+x.amount,0)),exp=months.map(m=>data.tx.filter(x=>monthKey(x.date)===m&&x.type==="지출").reduce((a,x)=>a+x.amount,0));let max=Math.max(...inc,...exp,1),L=40,R=w-15,T=15,B=h-30;ctx.clearRect(0,0,w,h);ctx.strokeStyle="#e5e7eb";ctx.beginPath();ctx.moveTo(L,T);ctx.lineTo(L,B);ctx.lineTo(R,B);ctx.stroke();plot(inc,"#2563eb");plot(exp,"#dc2626");function plot(arr,color){ctx.strokeStyle=color;ctx.lineWidth=2;ctx.beginPath();arr.forEach((v,i)=>{let x=L+i*(R-L)/(arr.length-1),y=B-v/max*(B-T);i?ctx.lineTo(x,y):ctx.moveTo(x,y)});ctx.stroke()}ctx.fillStyle="#64748b";ctx.font="10px sans-serif";months.forEach((m,i)=>{let x=L+i*(R-L)/(months.length-1);ctx.fillText(m.slice(5),x-7,B+18)})}
+function openTx(){document.getElementById("txDate").value=today();let s=document.getElementById("txCat");s.innerHTML=cats.map(x=>`<option>${x}</option>`).join("");document.getElementById("txAmount").value="";document.getElementById("txMemo").value="";document.getElementById("txModal").classList.add("show")}
+function saveTx(){if(!validDate(document.getElementById("txDate").value))return alert("날짜를 입력해 주세요.");let amount=+document.getElementById("txAmount").value;if(!Number.isSafeInteger(amount)||amount<=0)return alert("금액은 1원 이상의 정수로 입력해 주세요.");data.tx.push({id:crypto.randomUUID(),date:document.getElementById("txDate").value,type:document.getElementById("txType").value,cat:document.getElementById("txCat").value,amount,memo:document.getElementById("txMemo").value});closeModals();save()}
+function openAsset(){document.getElementById("assetDate").value=today();document.getElementById("assetAmount").value="";document.getElementById("assetName").value="";document.getElementById("assetModal").classList.add("show")}
+function saveAsset(){if(!validDate(document.getElementById("assetDate").value))return alert("날짜를 입력해 주세요.");let amount=+document.getElementById("assetAmount").value;if(!Number.isSafeInteger(amount)||amount<=0)return alert("금액은 1원 이상의 정수로 입력해 주세요.");data.assets.push({id:crypto.randomUUID(),type:document.getElementById("assetType").value,amount,name:document.getElementById("assetName").value||"이름 없음",date:document.getElementById("assetDate").value});closeModals();save()}
+function openGoal(){document.getElementById("goalName").value="";document.getElementById("goalTarget").value="";document.getElementById("goalCurrent").value="";document.getElementById("goalDate").value="";document.getElementById("goalModal").classList.add("show")}
+function saveGoal(){let name=document.getElementById("goalName").value,target=+document.getElementById("goalTarget").value,current=+document.getElementById("goalCurrent").value;if(!name||!Number.isSafeInteger(target)||target<=0||!Number.isSafeInteger(current)||current<0)return alert("목표명과 올바른 금액을 입력해 주세요.");data.goals.push({id:crypto.randomUUID(),name,target,current,date:document.getElementById("goalDate").value});closeModals();save()}
+function closeModals(){document.querySelectorAll(".modal").forEach(x=>x.classList.remove("show"))}
+function delTx(id){if(confirm("이 거래를 삭제할까요?")){data.tx=data.tx.filter(x=>x.id!==id);save()}}
+function delAsset(id){if(confirm("이 자산을 삭제할까요?")){data.assets=data.assets.filter(x=>x.id!==id);save()}}
+function delGoal(id){if(confirm("이 목표를 삭제할까요?")){data.goals=data.goals.filter(x=>x.id!==id);save()}}
+function backup(){let blob=new Blob([JSON.stringify(data,null,2)],{type:"application/json"}),a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="유준이_자산관리_백업.json";a.click()}
+function validDate(s){return typeof s==="string" && /^\d{4}-\d{2}-\d{2}$/.test(s) && !Number.isNaN(Date.parse(s))}
+function validData(d){
+ const money=n=>Number.isSafeInteger(n)&&n>=0, text=s=>typeof s==="string";
+ const row=x=>x&&typeof x==="object";
+ return d&&Array.isArray(d.tx)&&Array.isArray(d.assets)&&Array.isArray(d.goals)
+ &&d.tx.every(x=>row(x)&&text(x.id)&&validDate(x.date)&&["수입","지출","저축","투자"].includes(x.type)&&text(x.cat)&&text(x.memo)&&money(x.amount))
+ &&d.assets.every(x=>row(x)&&text(x.id)&&validDate(x.date)&&["현금","예금/적금","주식","ETF","기타투자","기타자산","부채"].includes(x.type)&&text(x.name)&&money(x.amount))
+ &&d.goals.every(x=>row(x)&&text(x.id)&&text(x.name)&&money(x.target)&&x.target>0&&money(x.current)&&(x.date===""||validDate(x.date)));
+}
+function restoreData(e){let f=e.target.files[0];if(!f)return;let r=new FileReader();r.onload=()=>{try{let next=JSON.parse(r.result);if(!validData(next))throw Error();if(!confirm("현재 데이터를 백업 파일의 내용으로 교체할까요?"))return;for(const key of ["tx","assets","goals"])next[key]=next[key].map(x=>({...x,id:crypto.randomUUID()}));localStorage.setItem(KEY,JSON.stringify(next));data=next;render();alert("복원되었습니다.")}catch{alert("복원하지 못했습니다. 백업 파일 형식과 저장 공간을 확인해 주세요.")}finally{e.target.value=""}};r.onerror=()=>alert("파일을 읽지 못했습니다.");r.readAsText(f)}
+function resetAll(){if(confirm("모든 거래·자산·목표를 삭제할까요?")){data={tx:[],assets:[],goals:[]};save()}}
+function esc(s){return String(s??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]))}
+document.querySelectorAll(".nav button").forEach(b=>b.onclick=()=>{document.querySelectorAll(".nav button").forEach(x=>x.classList.remove("active"));b.classList.add("active");document.querySelectorAll(".page").forEach(p=>p.classList.remove("active"));document.getElementById(b.dataset.page).classList.add("active");if(b.dataset.page==="dashboard")setTimeout(drawCharts,30)});
+render();window.addEventListener("resize",drawCharts);
+</script>
+
+<script>
+if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
+  window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js').catch(()=>{}));
+}
+</script>
+
+</body>
+</html>
